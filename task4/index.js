@@ -3,10 +3,10 @@
 async function asyncMap(iterator, callback, signal) {
     const results = [];
     for await (const chunk of iterator) {
+        if (signal.aborted) {
+            throw new Error('ABORTED');
+        }
         for (const element of chunk) {
-            if (signal.aborted) {
-                throw new Error('Operation was aborted');
-            }
             results.push(await callback(element, signal));
         }
     }
@@ -19,16 +19,11 @@ async function* createIterator(array, chunkSize = 2) {
     }
 }
 
-async function mapCallback(element, signal) {
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
+async function mapCallback(element) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
             resolve(element * 2);
-        }, 100);
-
-        signal.addEventListener('abort', () => {
-            clearTimeout(timeout);
-            reject(new Error('Operation was aborted'));
-        });
+        }, 200);
     });
 }
 
@@ -42,8 +37,8 @@ const signal = controller.signal;
         const result = await asyncMap(iterator, mapCallback, signal);
         console.log(result); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
     } catch (error) {
-        console.log(error.message);
+        console.error(`Error: ${error.message}`);
     }
 })();
 
-// setTimeout(() => { controller.abort(); }, 2500);
+setTimeout(() => controller.abort(), 500);
