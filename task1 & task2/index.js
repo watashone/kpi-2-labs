@@ -11,19 +11,34 @@
 const numbers = [1, 2, 3, 4, 5];
 
 // callback
-function callbackMap(array, callback) {
+function callbackMap(array, callback, finalCallback) {
     const results = [];
-    for (const element of array) {
-        results.push(callback(element));
+    let count = 0;
+
+    function processElement(index) {
+        if (index >= array.length) {
+            finalCallback(results);
+            return;
+        }
+        callback(array[index], (result) => {
+            results[index] = result;
+            count++;
+            processElement(index + 1);
+        });
     }
-    return results;
+
+    processElement(0);
 }
 
-function callback(element) {
-    return element * 2;
+function callback(element, done) {
+    setTimeout(() => {
+        done(element * 2);
+    }, 1000);
 }
 
-console.log(callbackMap(numbers, callback));
+callbackMap(numbers, callback, (results) => {
+    console.log('Results:', results);
+});
 
 // promise
 
